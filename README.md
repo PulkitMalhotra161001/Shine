@@ -1,7 +1,7 @@
 <h1>Project Structure:</h1>
 
-###Frontend
+<h3>Frontend</h3>
  - src : Basic React setup
 
 
-#Setup instructions:
+<h1>Setup instructions:</h1>
