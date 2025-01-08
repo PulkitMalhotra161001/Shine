@@ -1,11 +1,16 @@
 const express = require("express");
+const whiteboardRoutes = require("./routes/whiteboardRoutes");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 
 const app = express();
 const PORT = 5000;
 
-app.get("/", (req, res) => {
-  res.send("Server is ready");
-});
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use("/api/whiteboards", whiteboardRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
