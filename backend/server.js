@@ -62,6 +62,11 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('draw-line', { start, end, color, size });
   });
 
+  // Handle drawing events
+  socket.on('draw-rectangle', ({ roomId, start, width, height, color, size }) => {
+    socket.to(roomId).emit('draw-rectangle', { start, width, height, color, size });
+  });
+
   // Handle canvas clear
   socket.on('clear-canvas', (roomId) => {
     activeRooms.delete(roomId);

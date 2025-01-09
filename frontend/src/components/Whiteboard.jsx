@@ -65,12 +65,22 @@ const Whiteboard = ({ whiteboardId }) => {
       context.lineWidth = penSize; // Reset to current user's size
     });
 
+    socket.on("draw-rectangle", ({ start, width, height, color, size }) => {
+      const context = contextRef.current;
+      context.strokeStyle = color;
+      context.lineWidth = size;
+      context.strokeRect(start.x, start.y, width, height);
+      context.strokeStyle = penColor; 
+      context.lineWidth = penSize;
+    });
+
     socket.on("clear-canvas", () => {
       clearCanvas();
     });
 
     return () => {
       socket.off("draw-line");
+      socket.off("draw-rectangle");
       socket.off("canvas-state");
       socket.off("clear-canvas");
     };
@@ -175,14 +185,23 @@ const Whiteboard = ({ whiteboardId }) => {
     }
   };
 
-  const finishDrawing = () => {
+  const finishDrawing = (event) => {
+    if(!isDrawing) return;
     setIsDrawing(false);
 
     if(tool==="pen" || tool==="eraser"){
       contextRef.current.closePath();
       lastPoint.current = null;
-    }else if(tool==="rectangle"){
-
+    }else if(tool==="rectangle" && whiteboardId && baseImageRef){
+      const { offsetX, offsetY } = event.nativeEvent;
+      socket.emit("draw-rectangle", {
+        roomId: whiteboardId,
+        start: startPos,
+        width: offsetX - startPos.x,
+        height: offsetY - startPos.y,
+        color: penColor,
+        size: penSize,
+      });
     }
 
     baseImageRef.current = null;
