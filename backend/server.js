@@ -69,7 +69,7 @@ io.on('connection', (socket) => {
 
   // Handle canvas clear
   socket.on('clear-canvas', (roomId) => {
-    activeRooms.delete(roomId);
+    activeRooms.set(roomId, null);
     socket.to(roomId).emit('clear-canvas');
   });
 

@@ -75,7 +75,7 @@ const Whiteboard = ({ whiteboardId }) => {
     });
 
     socket.on("clear-canvas", () => {
-      clearCanvas();
+      context.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     return () => {
