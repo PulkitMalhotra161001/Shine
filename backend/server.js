@@ -35,8 +35,26 @@ const io = new Server(httpServer , {
   },
 });
 
+
+// Store active rooms and their drawing data
+const activeRooms = new Map();
+
 io.on('connection', (socket) => {
   console.log('A user connected',socket.id);
+
+  // Join a whiteboard room
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    console.log(`User ${socket.id} joined room ${roomId}`);
+
+    if (activeRooms.has(roomId)) {
+      socket.emit('canvas-state', activeRooms.get(roomId));
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 
 httpServer.listen(PORT, () => {
