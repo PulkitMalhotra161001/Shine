@@ -32,6 +32,22 @@ const Whiteboard = ({ whiteboardId }) => {
       socket.emit('join-room', whiteboardId);
       loadWhiteboard();
     }
+
+    socket.on('canvas-state', (imageData) => {
+      if (imageData) {
+        const img = new Image();
+        img.src = imageData;
+        img.onload = () => {
+          const context = contextRef.current;
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(img, 0, 0);
+        };
+      }
+    });
+
+    return () => {
+      socket.off('canvas-state');
+    };
   }, []);
 
   useEffect(() => {
@@ -121,6 +137,15 @@ const Whiteboard = ({ whiteboardId }) => {
   const finishDrawing = () => {
     contextRef.current.closePath();
     setIsDrawing(false);
+
+    // Save canvas state after drawing
+    if (whiteboardId) {
+      const imageData = canvasRef.current.toDataURL();
+      socket.emit('save-canvas-state', {
+        roomId: whiteboardId,
+        imageData
+      });
+    }
   };
 
   const draw = (event) => {

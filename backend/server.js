@@ -52,6 +52,11 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Save canvas state
+  socket.on('save-canvas-state', ({ roomId, imageData }) => {
+    activeRooms.set(roomId, imageData);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
