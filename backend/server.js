@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const whiteboardRoutes = require("./routes/whiteboardRoutes");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const http = require("http"); // Required for Socket.IO
+const { Server } = require("socket.io");
 
 require("dotenv").config();
 
@@ -24,6 +26,19 @@ mongoose
 //Routes
 app.use("/api/whiteboards", whiteboardRoutes);
 
-app.listen(PORT, () => {
+// Create HTTP server and bind Socket.IO
+const httpServer  = http.createServer(app);
+const io = new Server(httpServer , {
+  cors: {
+      origin: "http://localhost:5173", // Frontend origin
+      methods: ["GET", "POST"],
+  },
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected',socket.id);
+});
+
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -5,6 +5,7 @@ import {
   fetchWhiteboard,
   saveWhiteboard,
   updateWhiteboard,
+  socket
 } from "../utils/api";
 
 const Whiteboard = ({ whiteboardId }) => {
@@ -28,6 +29,7 @@ const Whiteboard = ({ whiteboardId }) => {
     contextRef.current = context;
 
     if (whiteboardId) {
+      socket.emit('join-room', whiteboardId);
       loadWhiteboard();
     }
   }, []);

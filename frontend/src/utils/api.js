@@ -2,6 +2,11 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api/whiteboards';
 
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = 'http://localhost:5000';
+export const socket = io(SOCKET_URL);
+
 export const saveWhiteboard = async (data) => {
     const response = await axios.post(`${API_BASE_URL}`, data);
     return response.data;
