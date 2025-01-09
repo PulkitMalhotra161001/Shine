@@ -62,6 +62,12 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('draw-line', { start, end, color, size });
   });
 
+  // Handle canvas clear
+  socket.on('clear-canvas', (roomId) => {
+    activeRooms.delete(roomId);
+    socket.to(roomId).emit('clear-canvas');
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });

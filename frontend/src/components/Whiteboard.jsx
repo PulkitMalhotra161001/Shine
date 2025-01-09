@@ -59,9 +59,14 @@ const Whiteboard = ({ whiteboardId }) => {
       context.lineWidth = penSize; // Reset to current user's size
     });
 
+    socket.on('clear-canvas', () => {
+      clearCanvas();
+    });
+
     return () => {
       socket.off('draw-line');
       socket.off('canvas-state');
+      socket.off('clear-canvas');
     };
   }, []);
 
@@ -140,6 +145,9 @@ const Whiteboard = ({ whiteboardId }) => {
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
+    if (whiteboardId) {
+      socket.emit('clear-canvas', whiteboardId);
+    }
   };
 
   const startDrawing = (event) => {
