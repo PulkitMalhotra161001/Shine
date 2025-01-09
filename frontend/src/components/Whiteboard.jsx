@@ -5,12 +5,9 @@ import {
   fetchWhiteboard,
   saveWhiteboard,
   updateWhiteboard,
-  socket
+  socket,
 } from "../utils/api";
-import { 
-  Eraser,
-  Save,
-} from 'lucide-react';
+import { Eraser, Save, Pencil, Square } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -22,6 +19,9 @@ const Whiteboard = ({ whiteboardId }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const navigate = useNavigate();
   const lastPoint = useRef(null);
+  const [tool, setTool] = useState("pen");
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const baseImageRef = useRef(null); //to avoid creating multiple shape on canvas when cursor moves
 
   //
   useEffect(() => {
@@ -36,11 +36,11 @@ const Whiteboard = ({ whiteboardId }) => {
     contextRef.current = context;
 
     if (whiteboardId) {
-      socket.emit('join-room', whiteboardId);
+      socket.emit("join-room", whiteboardId);
       loadWhiteboard();
     }
 
-    socket.on('canvas-state', (imageData) => {
+    socket.on("canvas-state", (imageData) => {
       if (imageData) {
         const img = new Image();
         img.src = imageData;
@@ -53,7 +53,7 @@ const Whiteboard = ({ whiteboardId }) => {
     });
 
     // Socket event listeners
-    socket.on('draw-line', ({ start, end, color, size }) => {
+    socket.on("draw-line", ({ start, end, color, size }) => {
       const context = contextRef.current;
       context.strokeStyle = color;
       context.lineWidth = size;
@@ -65,14 +65,14 @@ const Whiteboard = ({ whiteboardId }) => {
       context.lineWidth = penSize; // Reset to current user's size
     });
 
-    socket.on('clear-canvas', () => {
+    socket.on("clear-canvas", () => {
       clearCanvas();
     });
 
     return () => {
-      socket.off('draw-line');
-      socket.off('canvas-state');
-      socket.off('clear-canvas');
+      socket.off("draw-line");
+      socket.off("canvas-state");
+      socket.off("clear-canvas");
     };
   }, []);
 
@@ -156,29 +156,43 @@ const Whiteboard = ({ whiteboardId }) => {
     const canvas = canvasRef.current;
     contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
     if (whiteboardId) {
-      socket.emit('clear-canvas', whiteboardId);
+      socket.emit("clear-canvas", whiteboardId);
     }
   };
 
   const startDrawing = (event) => {
     const { offsetX, offsetY } = event.nativeEvent;
-    contextRef.current.beginPath();
-    contextRef.current.moveTo(offsetX, offsetY);
     setIsDrawing(true);
-    lastPoint.current = { x: offsetX, y: offsetY };
+    setStartPos({ x: offsetX, y: offsetY });
+
+    if(tool==="pen" || tool==="eraser"){
+      contextRef.current.beginPath();
+      contextRef.current.moveTo(offsetX, offsetY);
+      lastPoint.current = { x: offsetX, y: offsetY };
+    }else if(tool==="rectangle"){
+      const canvas = canvasRef.current;
+      baseImageRef.current = contextRef.current.getImageData(0, 0, canvas.width, canvas.height);
+    }
   };
 
   const finishDrawing = () => {
-    contextRef.current.closePath();
     setIsDrawing(false);
-    lastPoint.current = null;
+
+    if(tool==="pen" || tool==="eraser"){
+      contextRef.current.closePath();
+      lastPoint.current = null;
+    }else if(tool==="rectangle"){
+
+    }
+
+    baseImageRef.current = null;
 
     // Save canvas state after drawing
     if (whiteboardId) {
       const imageData = canvasRef.current.toDataURL();
-      socket.emit('save-canvas-state', {
+      socket.emit("save-canvas-state", {
         roomId: whiteboardId,
-        imageData
+        imageData,
       });
     }
   };
@@ -186,29 +200,65 @@ const Whiteboard = ({ whiteboardId }) => {
   const draw = (event) => {
     if (!isDrawing) return;
     const { offsetX, offsetY } = event.nativeEvent;
-    contextRef.current.lineTo(offsetX, offsetY);
-    contextRef.current.stroke();
 
-    // Emit drawing event
-    if (whiteboardId && lastPoint.current) {
-      socket.emit('draw-line', {
-        roomId: whiteboardId,
-        start: lastPoint.current,
-        end: { x: offsetX, y: offsetY },
-        color: penColor,
-        size: penSize
-      });
+    if (tool === 'pen' || tool === 'eraser') {
+      contextRef.current.lineTo(offsetX, offsetY);
+      contextRef.current.stroke();
+
+      // Emit drawing event
+      if (whiteboardId && lastPoint.current) {
+        socket.emit("draw-line", {
+          roomId: whiteboardId,
+          start: lastPoint.current,
+          end: { x: offsetX, y: offsetY },
+          color: penColor,
+          size: penSize,
+        });
+      }
+
+      lastPoint.current = { x: offsetX, y: offsetY };
+    }else if(tool==="rectangle"){
+      if (baseImageRef.current) {
+        contextRef.current.putImageData(baseImageRef.current, 0, 0);
+      }
+      const width = offsetX - startPos.x;
+      const height = offsetY - startPos.y;
+      contextRef.current.strokeRect(startPos.x, startPos.y, width, height);
     }
-
-    lastPoint.current = { x: offsetX, y: offsetY };
   };
 
   return (
     <div className="h-full w-full flex flex-col items-center">
       <div className="mb-2 mt-2 flex items-center space-x-4">
+        <button
+          onClick={() => setTool("pen")}
+          className={`p-2 rounded shadow ${
+            tool === "pen" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          <Pencil />
+        </button>
+        <button
+          onClick={() => setTool("rectangle")}
+          className={`p-2 rounded shadow ${
+            tool === "rectangle" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          <Square />
+        </button>
+        <button
+          onClick={() => {
+            setTool("eraser");
+            setPenColor("#FFFFFF");
+          }}
+          className={`p-2 rounded shadow ${
+            tool === "eraser" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          <Eraser />
+        </button>
         {/* Color Picker */}
         <label className="flex items-center space-x-2">
-          <span>Color:</span>
           <input
             type="color"
             value={penColor}
@@ -229,13 +279,6 @@ const Whiteboard = ({ whiteboardId }) => {
           />
           <span>{penSize}px</span>
         </label>
-        {/* Eraser */}
-        <button
-          onClick={() => setPenColor("#FFFFFF")} // Set pen color to white for erasing
-          className="p-2 bg-gray-200 text-black rounded shadow"
-        >
-          <Eraser/>
-        </button>
         {/* Clear Canvas */}
         <button
           onClick={clearCanvas}
@@ -249,14 +292,14 @@ const Whiteboard = ({ whiteboardId }) => {
             onClick={updateCurrentWhiteboard}
             className="p-2 bg-blue-700 text-white rounded shadow"
           >
-            <Save/>
+            <Save />
           </button>
         ) : (
           <button
             onClick={saveCurrentWhiteboard}
             className="p-2 bg-blue-500 text-white rounded shadow"
           >
-            <Save/>
+            <Save />
           </button>
         )}
 
