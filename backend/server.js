@@ -57,6 +57,11 @@ io.on('connection', (socket) => {
     activeRooms.set(roomId, imageData);
   });
 
+  // Handle drawing events
+  socket.on('draw-line', ({ roomId, start, end, color, size }) => {
+    socket.to(roomId).emit('draw-line', { start, end, color, size });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });

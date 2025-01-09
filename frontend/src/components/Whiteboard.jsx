@@ -15,6 +15,7 @@ const Whiteboard = ({ whiteboardId }) => {
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const navigate = useNavigate();
+  const lastPoint = useRef(null);
 
   //
   useEffect(() => {
@@ -45,7 +46,21 @@ const Whiteboard = ({ whiteboardId }) => {
       }
     });
 
+    // Socket event listeners
+    socket.on('draw-line', ({ start, end, color, size }) => {
+      const context = contextRef.current;
+      context.strokeStyle = color;
+      context.lineWidth = size;
+      context.beginPath();
+      context.moveTo(start.x, start.y);
+      context.lineTo(end.x, end.y);
+      context.stroke();
+      context.strokeStyle = penColor; // Reset to current user's color
+      context.lineWidth = penSize; // Reset to current user's size
+    });
+
     return () => {
+      socket.off('draw-line');
       socket.off('canvas-state');
     };
   }, []);
@@ -132,11 +147,13 @@ const Whiteboard = ({ whiteboardId }) => {
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
     setIsDrawing(true);
+    lastPoint.current = { x: offsetX, y: offsetY };
   };
 
   const finishDrawing = () => {
     contextRef.current.closePath();
     setIsDrawing(false);
+    lastPoint.current = null;
 
     // Save canvas state after drawing
     if (whiteboardId) {
@@ -153,6 +170,19 @@ const Whiteboard = ({ whiteboardId }) => {
     const { offsetX, offsetY } = event.nativeEvent;
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
+
+    // Emit drawing event
+    if (whiteboardId && lastPoint.current) {
+      socket.emit('draw-line', {
+        roomId: whiteboardId,
+        start: lastPoint.current,
+        end: { x: offsetX, y: offsetY },
+        color: penColor,
+        size: penSize
+      });
+    }
+
+    lastPoint.current = { x: offsetX, y: offsetY };
   };
 
   return (
