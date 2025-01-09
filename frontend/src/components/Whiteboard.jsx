@@ -7,6 +7,12 @@ import {
   updateWhiteboard,
   socket
 } from "../utils/api";
+import { 
+  Eraser,
+  Save,
+} from 'lucide-react';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Whiteboard = ({ whiteboardId }) => {
   const [penColor, setPenColor] = useState("#000000");
@@ -82,6 +88,10 @@ const Whiteboard = ({ whiteboardId }) => {
     }
   }, [penSize]);
 
+  const notify = (message) => {
+    toast.success(message, { autoClose: 1000 });
+  };
+
   const loadWhiteboard = async () => {
     try {
       const whiteboard = await fetchWhiteboard(whiteboardId);
@@ -122,7 +132,7 @@ const Whiteboard = ({ whiteboardId }) => {
         name: "Guest User",
         data: imageData,
       });
-      alert("Updated successfully!");
+      notify("Updated successfully!");
     } catch (error) {
       console.error("Failed to update whiteboard:", error);
     }
@@ -195,7 +205,7 @@ const Whiteboard = ({ whiteboardId }) => {
 
   return (
     <div className="h-full w-full flex flex-col items-center">
-      <div className="mb-4 flex items-center space-x-4">
+      <div className="mb-2 mt-2 flex items-center space-x-4">
         {/* Color Picker */}
         <label className="flex items-center space-x-2">
           <span>Color:</span>
@@ -222,9 +232,9 @@ const Whiteboard = ({ whiteboardId }) => {
         {/* Eraser */}
         <button
           onClick={() => setPenColor("#FFFFFF")} // Set pen color to white for erasing
-          className="px-4 py-2 bg-gray-200 text-black rounded shadow"
+          className="p-2 bg-gray-200 text-black rounded shadow"
         >
-          Eraser
+          <Eraser/>
         </button>
         {/* Clear Canvas */}
         <button
@@ -237,16 +247,16 @@ const Whiteboard = ({ whiteboardId }) => {
         {whiteboardId ? (
           <button
             onClick={updateCurrentWhiteboard}
-            className="px-4 py-2 bg-blue-700 text-white rounded shadow"
+            className="p-2 bg-blue-700 text-white rounded shadow"
           >
-            Update
+            <Save/>
           </button>
         ) : (
           <button
             onClick={saveCurrentWhiteboard}
-            className="px-4 py-2 bg-blue-500 text-white rounded shadow"
+            className="p-2 bg-blue-500 text-white rounded shadow"
           >
-            Save
+            <Save/>
           </button>
         )}
 
@@ -268,6 +278,7 @@ const Whiteboard = ({ whiteboardId }) => {
         onMouseLeave={finishDrawing} // Stop drawing if the mouse leaves the canvas
         className="w-full h-full bg-white border"
       />
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };
