@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/whiteboards';
+const API_BASE_URL = 'https://shine-backend-zo6m.onrender.com/api/whiteboards';
 
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = 'https://shine-backend-zo6m.onrender.com';
 export const socket = io(SOCKET_URL);
 
 export const saveWhiteboard = async (data) => {
